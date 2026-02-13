@@ -15,12 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_output_path(field: str) -> Path:
-    MainConfig.DATA_DIR.mkdir(parents=True, exist_ok=True)
-
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = MainConfig.CSV_FILENAME_FORMAT.format(field=field, timestamp=timestamp)
+    data_dir = MainConfig.DATA_DIR / field / timestamp
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-    return MainConfig.DATA_DIR / filename
+    return data_dir / MainConfig.CSV_NAME
 
 
 def get_crawler_settings(output_path: Path) -> dict:

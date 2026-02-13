@@ -6,7 +6,7 @@ class MainConfig:
     SRC_DIR = Path(__file__).parent.resolve()
     DATA_DIR = SRC_DIR / "data"
     LOGS_DIR = SRC_DIR / "logs"
-    CSV_FILENAME_FORMAT = "{field}_vacancies_{timestamp}.csv"
+    CSV_NAME = "raw_data.csv"
 
     DOU_URL: str = "https://jobs.dou.ua"
     PYTHON_VACANCIES: str = "/vacancies/?category=Python"
