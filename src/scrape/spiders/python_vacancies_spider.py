@@ -7,7 +7,7 @@ from selenium.common import TimeoutException
 from selenium.webdriver.support.wait import WebDriverWait
 
 from selenium import webdriver
-from src.config import MainConfig
+from src.config import MainConfig, ExtractExperiencePatterns
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
@@ -32,7 +32,9 @@ class PythonVacanciesSpider(scrapy.Spider):
 
         while True:
             try:
-                current_count = len(self.driver.find_elements(By.CSS_SELECTOR, ".l-vacancy"))
+                current_count = len(
+                    self.driver.find_elements(By.CSS_SELECTOR, ".l-vacancy")
+                )
                 self.logger.info(f"Loaded vacancies. Current total: {current_count}")
                 more_button = wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, ".more-btn"))
@@ -42,11 +44,14 @@ class PythonVacanciesSpider(scrapy.Spider):
                     self.logger.info("'More' button is hidden. Stopping")
                     break
 
-                self.driver.execute_script("arguments[0].scrollIntoView();", more_button)
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView();", more_button
+                )
                 more_button.click()
 
                 wait.until(
-                    lambda d: len(d.find_elements(By.CSS_SELECTOR, ".l-vacancy")) > current_count
+                    lambda d: len(d.find_elements(By.CSS_SELECTOR, ".l-vacancy"))
+                    > current_count
                 )
 
             except TimeoutException:
@@ -67,7 +72,6 @@ class PythonVacanciesSpider(scrapy.Spider):
             request=scrapy.Request(self.target_url),
         )
         yield from self.parse_vacancies(response)
-
 
     def parse_vacancies(self, response: HtmlResponse):
         vacancies_urls = response.css(".l-vacancy .title .vt::attr(href)").getall()
@@ -103,24 +107,29 @@ class PythonVacanciesSpider(scrapy.Spider):
 
         yield vl.load_item()
 
-    def extract_experience(self, text: str) -> float | None:
+    @staticmethod
+    def extract_experience(text: str) -> float | None:
+        clean_text = ExtractExperiencePatterns.DATE_GUARD.sub(" ", text)
+        statements = ExtractExperiencePatterns.SPLIT_PATTERN.split(clean_text)
         result = []
 
-        for match in MainConfig.YEARS_PATTERN.findall(text):
-            num = float(match.replace(",", "."))
-            if num < 15:
-                result.append(num)
+        for statement in statements:
+            if ExtractExperiencePatterns.NON_REQ_CONTEXT.search(statement):
+                continue
 
-        for match in MainConfig.MONTHS_PATTERN.findall(text):
-            num = float(match.replace(",", "."))
-            result.append(num / 12)
+            for match in ExtractExperiencePatterns.YEARS_PATTERN.finditer(statement):
+                val = float(match.group(1).replace(",", "."))
+                if 0 < val < 15:
+                    result.append(val)
 
-        if not result:
-            return None
+            for match in ExtractExperiencePatterns.MONTHS_PATTERN.finditer(statement):
+                val = float(match.group(1).replace(",", ".")) / 12
+                result.append(val)
 
         return max(result)
 
-    def extract_tech_stack(self, text: str) -> list[str]:
+    @staticmethod
+    def extract_tech_stack(text: str) -> list[str]:
         text_tokens = set(re.findall(r"\b[\w.+#]+\b", text.lower()))
         found_tech = MainConfig.TECH_KEYWORDS.intersection(text_tokens)
 
