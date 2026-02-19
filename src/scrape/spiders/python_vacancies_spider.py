@@ -126,7 +126,7 @@ class PythonVacanciesSpider(scrapy.Spider):
                 val = float(match.group(1).replace(",", ".")) / 12
                 result.append(val)
 
-        return max(result)
+        return max(result, default=None)
 
     @staticmethod
     def extract_tech_stack(text: str) -> list[str]:
