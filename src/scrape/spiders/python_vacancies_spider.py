@@ -95,7 +95,9 @@ class PythonVacanciesSpider(scrapy.Spider):
         vl.add_css("date", ".date::text")
         vl.add_css("salary", ".salary::text")
 
-        vacancy_text = " ".join(response.css(".vacancy-section ::text").getall())
+        raw_vacancy_text = response.css(".vacancy-section ::text").getall()
+        vacancy_text = self.clean_vacancy_text(raw_vacancy_text)
+
         vl.add_value("description", vacancy_text)
 
         xp_years = self.extract_experience(vacancy_text)
@@ -106,6 +108,10 @@ class PythonVacanciesSpider(scrapy.Spider):
         vl.add_value("technologies", list(found_tech))
 
         yield vl.load_item()
+
+    @staticmethod
+    def clean_vacancy_text(vacancy_text: list[str]) -> str:
+        return re.sub(r"\s+", " ", " ".join(vacancy_text))
 
     @staticmethod
     def extract_experience(text: str) -> float | None:
