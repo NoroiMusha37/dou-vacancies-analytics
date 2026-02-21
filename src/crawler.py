@@ -14,7 +14,7 @@ SPIDERS = {
 logger = logging.getLogger(__name__)
 
 
-def get_output_path(field: str) -> Path:
+def get_csv_output_path(field: str) -> Path:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     data_dir = MainConfig.DATA_DIR / field / timestamp
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -35,17 +35,15 @@ def get_crawler_settings(output_path: Path) -> dict:
     return settings
 
 
-def run_spider(spider_key: str):
+def run_spider(spider_key: str, csv_output_path: Path) -> None:
     spider_class = SPIDERS.get(spider_key)
     if not spider_class:
         logger.error(f"Spider {spider_key} is not supported")
         raise ValueError(f"Spider {spider_key} not supported")
 
-    output_path = get_output_path(spider_key)
+    settings = get_crawler_settings(csv_output_path)
 
-    settings = get_crawler_settings(output_path)
-
-    logger.info(f"Starting spider for {spider_key} vacancies. Saving to {output_path}")
+    logger.info(f"Starting spider for {spider_key} vacancies. Saving to {csv_output_path}")
 
     process = CrawlerProcess(settings=settings)
     process.crawl(spider_class)
